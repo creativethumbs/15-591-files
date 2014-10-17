@@ -10,6 +10,8 @@ import xmltodict, json
 import string
 
 inputFile = open('edgefile.txt', 'r')
+outputFile = open('eigenvector.txt', 'w')
+output_array = [] # array for writing to output text file
 
 sparql_q = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/eigen/query')
 sparql_u = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/eigen/update')
@@ -109,7 +111,7 @@ def populate():
                          INSERT DATA {vert:'+src+' score: 0.001}')
         sparql_u.query()
 
-def MVM():
+def MVM(iterNo):
     del_array = [] # array for storing values to delete
     ins_array = [] # array for storing values to insert
 
@@ -130,8 +132,10 @@ def MVM():
         nid = decoded['sparql']['results']['result'][i]['binding'][0]['uri']['#text']
         edge = decoded['sparql']['results']['result'][i]['binding'][1]['uri']
         score = decoded['sparql']['results']['result'][i]['binding'][2]['literal']['#text']
-        elem = '<' + nid + '> <' + edge + '> ' + score
-        del_array.append(elem)
+        elem1 = '<' + nid + '> <' + edge + '> ' + score
+        elem2 = nid + ', ' + str(iterNo) + ', ' + score
+        del_array.append(elem1)
+        output_array.append(elem2)
 
     sparql_q.setQuery('PREFIX link:<http://mygraph.org/linkedto> \
                         PREFIX score:<http://mygraph.org/score> \
@@ -189,11 +193,19 @@ def MVM():
         sparql_u.setQuery('INSERT DATA {'+newitem+'}')
         sparql_u.query()
 
+def writeToFile():
+    for item in output_array:
+        outputFile.write(item + '\n')
 
 cleardata() 
-populate() 
-MVM()
+populate()  
+iterNo = 1
+while iterNo < 51 :
+    MVM(iterNo)
+    iterNo += 1
+writeToFile()
 
-
+inputFile.close()
+outputFile.close()
 
 
