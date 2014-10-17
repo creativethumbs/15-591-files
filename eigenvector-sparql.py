@@ -1,6 +1,6 @@
 from SPARQLWrapper import SPARQLWrapper 
 from SPARQLWrapper import XML, GET, POST, JSON, JSONLD, N3, TURTLE, RDF
-from SPARQLWrapper import SELECT, INSERT
+from SPARQLWrapper import SELECT, INSERT, DELETE
 from SPARQLWrapper import URLENCODED, POSTDIRECTLY 
 from SPARQLWrapper.Wrapper import QueryResult, QueryBadFormed, EndPointNotFound, EndPointInternalError
 
@@ -11,31 +11,32 @@ import string
 
 inputFile = open('edgefile.txt', 'r')
 
-sparql = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/eigen/query')
-sparul = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/eigen/update')
+vector_q = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/vector/query')
+vector_u = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/vector/update')
+edges_q = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/edges/query')
+edges_u = SPARQLWrapper('http://localhost:8080/openrdf-workbench/repositories/edges/update')
 # for populating the graph (to be used only once)
 def populate():
     for line in inputFile: 
         record = string.split(line, " ")
         src = record[0].rstrip()
         dst = record[1].rstrip()
+        vector_u.setMethod(POST)
+        edges_u.setMethod(POST)
 
-        sparul.setMethod(POST)
-        sparul.setQuery('PREFIX vert:<http://mygraph.org/vertex/> \
+        edges_u.setQuery('PREFIX vert:<http://mygraph.org/vertex/> \
                          PREFIX link:<http://mygraph.org/linkedto> \
-                         PREFIX val:<http://mygraph.org/value> \
                          INSERT DATA {vert:'+src+' link: vert:'+dst+'}')
-        sparul.query()
+        edges_u.query()
 
-        sparul.setQuery('PREFIX vert:<http://mygraph.org/vertex/> \
-                         PREFIX link:<http://mygraph.org/linkedto> \
-                         PREFIX val:<http://mygraph.org/value> \
-                         INSERT DATA {vert:'+src+' val: \"0.001\"}')
-        sparul.query()
+        vector_u.setQuery('PREFIX vert:<http://mygraph.org/vertex/> \
+                         PREFIX score:<http://mygraph.org/score> \
+                         INSERT DATA {vert:'+src+' score: \"0.001\"}')
+        vector_u.query()
+
         
-#populate()
-
-def update():
+#populate() 
+#def update():
 
 def query():
     sparql.setMethod(GET)
