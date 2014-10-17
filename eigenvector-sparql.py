@@ -47,7 +47,7 @@ def MVM():
     obj = xmltodict.parse(s)
     json_input = json.dumps(obj) #this is a string
     decoded = json.loads(json_input) #this is a json object(?)
-    print json.dumps(obj,sort_keys=True,indent=4)
+    #print json.dumps(obj,sort_keys=True,indent=4)
 
     # populates the array with the vector elements we need to delete later
     for i in range (len(decoded['sparql']['results']['result'])):
@@ -55,11 +55,8 @@ def MVM():
         edge = decoded['sparql']['results']['result'][i]['binding'][1]['uri']
         score = decoded['sparql']['results']['result'][i]['binding'][2]['literal']['#text']
         elem = '<' + nid + '> <' + edge + '> ' + score
-        temp_array.append(elem)
+        del_array.append(elem)
 
-    print temp_array[0]
-
-'''
     sparql_q.setQuery('PREFIX link:<http://mygraph.org/linkedto> \
                         PREFIX score:<http://mygraph.org/score> \
                         SELECT ?src (SUM(?score) AS ?totalScore) \
@@ -68,22 +65,20 @@ def MVM():
                         FILTER(?dst = ?nid) \
                         } GROUP BY ?src')
 
-    results = sparql_q.query().convert()
+    new_scores = sparql_q.query().convert()
     vectorSum = 0
-    s = results.toxml()
+    s = new_scores.toxml()
     obj = xmltodict.parse(s)
     json_input = json.dumps(obj) #this is a string
     decoded = json.loads(json_input) #this is a json object(?)
     print json.dumps(obj,sort_keys=True,indent=4)
 
     for i in range (len(decoded['sparql']['results']['result'])):
-        print decoded['sparql']['results']['result'][i]['binding'][0]['uri']['#text']
-        edge = decoded['sparql']['results']['result'][i]['binding'][1]['uri']
-        print edge
+        nid = decoded['sparql']['results']['result'][i]['binding'][1]['uri']['#text'] 
+        score = decoded['sparql']['results']['result'][i]['binding'][0]['literal']['#text']
+        edge = 'http://mygraph.org/score'
+        elem = '<' + nid + '> <' + edge + '> ' + score
+        ins_array.append(elem)
+    
 
-        if 'linkedto' in edge:
-            print decoded['sparql']['results']['result'][i]['binding'][2]['uri']['#text']
-        else:
-            print decoded['sparql']['results']['result'][i]['binding'][2]['literal']
-'''
 MVM()
