@@ -128,7 +128,7 @@ iterNo = 1
 while iterNo < 50 :
     iterNo += 1
     MVM(iterNo) 
-    print "done with iterNo " + str(iterNo-1)
+    print "done with iterNo " + str(iterNo)
 
 writeToFile()
 
