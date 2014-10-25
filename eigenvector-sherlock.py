@@ -16,9 +16,13 @@ outputFile = open('eigenvector-sherlock.txt', 'w')
 output_array = [] # array for writing to output text file
 
 userinfo = {
-    'httpd_username': 'YOUR USERNAME',
-    'httpd_password': 'YOUR PASSWORD'
-}
+    'httpd_username': str(sys.argv[1]),
+    'httpd_password': str(sys.argv[2])
+} 
+
+s = requests.Session()
+# logs in to Sherlock
+s.post('https://sherlock.psc.edu/urika/gam',data=userinfo)
 
 # some predefined queries / updates used
 allscores = 'PREFIX score:<http://mygraph.org/score> \
@@ -39,13 +43,17 @@ sumofsquares = 'PREFIX score:<http://mygraph.org/score> \
                         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
                         SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
                         {?s score: ?score}'
+
+headers = {'content-type': 'application/x-www-form-urlencoded'}
+
 def MVM(iterNo): 
+
     del_array = [] # array for storing values to delete
     ins_array = [] # array for storing values to insert
     vectorSum = 0
 
     query1 = {'query': allscores}
-    result = requests.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',data=userinfo,params=query1)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',params=query1)
 
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -60,20 +68,19 @@ def MVM(iterNo):
         edge = decoded['sparql']['results']['result'][i]['binding'][1]['uri']
         score = decoded['sparql']['results']['result'][i]['binding'][2]['literal']
         elem = '<' + nid + '> <' + edge + '> "' + score + '"'
+        
         del_array.append(elem) 
 
         if (iterNo == 2):
             output_array.append('<'+nid+'>, 1, 0.001')
 
     query2 = {'query': sumofscores}
-    result = requests.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',data=userinfo,params=query2)
-
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',params=query2)
+    
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
     json_input = json.dumps(obj)
     decoded = json.loads(json_input) 
-
-    #print json.dumps(obj,sort_keys=True,indent=4)
 
     # populates the array with the vector elements we need to insert
     for i in range (len(decoded['sparql']['results']['result'])):
@@ -81,20 +88,21 @@ def MVM(iterNo):
         score = decoded['sparql']['results']['result'][i]['binding'][1]['literal']['#text']
         edge = 'http://mygraph.org/score'
         elem = '<' + nid + '> <' + edge + '> "' + score + '"'
+        
         ins_array.append(elem)
 
     #does the SQL update using elements we need to insert and delete
     for item in del_array:
         updatestring ={'update': 'DELETE DATA {'+item+'}'}
-        requests.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',data=userinfo,params=updatestring)
+        s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=updatestring)
 
     for item in ins_array:
         updatestring ={'update': 'INSERT DATA {'+item+'}'}
-        requests.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',data=userinfo,params=updatestring)
+        s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=updatestring)
 
 
     query3 = {'query': sumofsquares}
-    result = requests.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',data=userinfo,params=query3)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',params=query3)
 
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -102,7 +110,7 @@ def MVM(iterNo):
     decoded = json.loads(json_input) 
 
     sumsquare = decoded['sparql']['results']['result']['binding']['literal']['#text']
-    print "sumsquare is " + sumsquare
+    
     vectorSum = math.sqrt(float(sumsquare))
 
     for item in ins_array:
@@ -114,8 +122,8 @@ def MVM(iterNo):
         deletestring ={'update': 'DELETE DATA {'+item+'}'}
         insertstring ={'update': 'INSERT DATA {'+newitem+'}'}
 
-        requests.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',data=userinfo,params=deletestring)
-        requests.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',data=userinfo,params=insertstring)
+        status1 = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=deletestring)
+        status2 = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=insertstring)
 
         output_array.append(vectorname + ', ' + str(iterNo) + ', ' + new_score)
 
@@ -125,6 +133,7 @@ def writeToFile():
         outputFile.write(item + '\n')
 
 iterNo = 1
+
 while iterNo < 50 :
     iterNo += 1
     MVM(iterNo) 
