@@ -29,7 +29,7 @@ FILTER(?p = score:)} '
 sumofscores = 'PREFIX link:<http://mygraph.org/linkedto> \
                         PREFIX score:<http://mygraph.org/score> \
                         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-                        SELECT ?src (SUM(xsd:float(?score)) AS ?totalScore) \
+                        SELECT ?src (SUM(xsd:double(?score)) AS ?totalScore) \
                         {?nid score: ?score . \
                         ?src link: ?dst . \
                         FILTER(?dst = ?nid) \
@@ -37,7 +37,7 @@ sumofscores = 'PREFIX link:<http://mygraph.org/linkedto> \
 
 sumofsquares = 'PREFIX score:<http://mygraph.org/score> \
                         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-                        SELECT (SUM(xsd:float(?score) * xsd:float(?score)) as ?vectorSum) \
+                        SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
                         {?s score: ?score}'
 def MVM(iterNo): 
     del_array = [] # array for storing values to delete
