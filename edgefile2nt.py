@@ -10,14 +10,14 @@ def makeOutput():
         src = record[0].rstrip()
         dst = record[1].rstrip()
 
-        outputFile.write("<http://mygraph.org/vertex/" + src + ">" + 
-            " <http://mygraph.org/linkedto> <http://mygraph.org/vertex/" + dst + "> .\n") 
+        outputFile.write("<http://vert/" + src + ">" + 
+            " <http://link> <http://vert/" + dst + "> .\n") 
         
     for line in inputFile2:
         src = line.rstrip() 
 
-        outputFile.write("<http://mygraph.org/vertex/" + src + ">" + 
-            " <http://mygraph.org/score> \"0.001\" .\n") 
+        outputFile.write("<http://vert/" + src + ">" + 
+            " <http://scoreiter1> \"0.001\" .\n") 
 
 makeOutput()
 

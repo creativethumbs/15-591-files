@@ -24,14 +24,17 @@ s = requests.Session()
 # logs in to Sherlock
 s.post('https://sherlock.psc.edu/urika/gam',data=userinfo)
 
-# some predefined queries / updates used
-allscores = 'PREFIX score:<http://mygraph.org/score> \
-SELECT ?s ?p ?o \
-{?s ?p ?o . \
-FILTER(?p = score:)} '
+headers = {'content-type': 'application/x-www-form-urlencoded'}
 
-sumofscores = 'PREFIX link:<http://mygraph.org/linkedto> \
-                        PREFIX score:<http://mygraph.org/score> \
+def MVM(iterNo): 
+    #all scores from previous iteration
+    allscores = 'PREFIX score:<http://scoreiter'+str(iterNo-1)+'> \
+    SELECT ?s ?p ?o \
+    {?s ?p ?o . \
+    FILTER(?p = score:)} '
+
+    sumofscores = 'PREFIX link:<http://link> \
+                        PREFIX score:<http://scoreiter'+str(iterNo-1)+'> \
                         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
                         SELECT ?src (SUM(xsd:double(?score)) AS ?totalScore) \
                         {?nid score: ?score . \
@@ -39,43 +42,23 @@ sumofscores = 'PREFIX link:<http://mygraph.org/linkedto> \
                         FILTER(?dst = ?nid) \
                         } GROUP BY ?src'
 
-sumofsquares = 'PREFIX score:<http://mygraph.org/score> \
+    #mass deletion
+    deletescores = 'PREFIX score:<http://scoreiter'+str(iterNo)+'> \
+                    DELETE {?s ?p ?o} WHERE {?s ?p ?o . \
+                    FILTER (?p = score:)}'
+
+    #uses scores from previous calculation
+    sumofsquares = 'PREFIX score:<http://scoreiter'+str(iterNo)+'> \
                         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
                         SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
                         {?s score: ?score}'
 
-headers = {'content-type': 'application/x-www-form-urlencoded'}
-
-def MVM(iterNo): 
-
     del_array = [] # array for storing values to delete
     ins_array = [] # array for storing values to insert
-    vectorSum = 0
-
-    query1 = {'query': allscores}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',params=query1)
-
-    xml_source = result.text
-    obj = xmltodict.parse(xml_source)
-    json_input = json.dumps(obj)
-    decoded = json.loads(json_input) 
-
-    #print json.dumps(obj,sort_keys=True,indent=4)
-
-    # populates the array with the vector elements we need to delete later
-    for i in range (len(decoded['sparql']['results']['result'])):
-        nid = decoded['sparql']['results']['result'][i]['binding'][0]['uri']
-        edge = decoded['sparql']['results']['result'][i]['binding'][1]['uri']
-        score = decoded['sparql']['results']['result'][i]['binding'][2]['literal']
-        elem = '<' + nid + '> <' + edge + '> "' + score + '"'
-        
-        del_array.append(elem) 
-
-        if (iterNo == 2):
-            output_array.append('<'+nid+'>, 1, 0.001')
+    vectorSum = 0 
 
     query2 = {'query': sumofscores}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',params=query2)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector2/query',params=query2)
     
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -86,23 +69,17 @@ def MVM(iterNo):
     for i in range (len(decoded['sparql']['results']['result'])):
         nid = decoded['sparql']['results']['result'][i]['binding'][0]['uri']
         score = decoded['sparql']['results']['result'][i]['binding'][1]['literal']['#text']
-        edge = 'http://mygraph.org/score'
+        edge = 'http://scoreiter'+str(iterNo)
         elem = '<' + nid + '> <' + edge + '> "' + score + '"'
         
         ins_array.append(elem)
 
-    #does the SQL update using elements we need to insert and delete
-    for item in del_array:
-        updatestring ={'update': 'DELETE DATA {'+item+'}'}
-        s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=updatestring)
-
     for item in ins_array:
         updatestring ={'update': 'INSERT DATA {'+item+'}'}
-        s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=updatestring)
-
+        s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=updatestring)
 
     query3 = {'query': sumofsquares}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector/query',params=query3)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector2/query',params=query3)
 
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -113,17 +90,20 @@ def MVM(iterNo):
     
     vectorSum = math.sqrt(float(sumsquare))
 
+    #deletes all scores from the previous calculation so they can be updated
+    deletestring ={'update': deletescores}
+    s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=deletestring)
+
+
     for item in ins_array:
         vectorname = item.split()[0]
         old_score = item.split()[2][1:-1] #need to remove the double quotes
         new_score = str(float(old_score) / float(vectorSum))
         newitem = vectorname + ' ' + item.split()[1] + ' "' + new_score + '"'
         
-        deletestring ={'update': 'DELETE DATA {'+item+'}'}
         insertstring ={'update': 'INSERT DATA {'+newitem+'}'}
 
-        status1 = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=deletestring)
-        status2 = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector/update',headers=headers,params=insertstring)
+        status2 = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=insertstring)
 
         output_array.append(vectorname + ', ' + str(iterNo) + ', ' + new_score)
 
