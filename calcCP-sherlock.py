@@ -26,18 +26,7 @@ s.post('https://sherlock.psc.edu/urika/gam',data=userinfo)
 
 headers = {'content-type': 'application/x-www-form-urlencoded'}
 
-def CP(iterNo): 
-    updatea = False
-    updateb = False
-    updatec = False
-    #all scores from previous iteration
-    #allscores = 'PREFIX ascore:<http://vector-a-score'+str(iterNo-1)+'> \
-    #PREFIX bscore:<http://vector-b-score'+str(iterNo-1)+'> \
-    #PREFIX cscore:<http://vector-b-score'+str(iterNo-1)+'> \
-    #SELECT ?s ?p ?o \
-    #{?s ?p ?o . \
-    #FILTER(?p = ascore: || ?p = bscore: || ?p = cscore:)} '
-
+def CP(iterNo):  
     # check com2 pg.6
     sumofscores_a = 'PREFIX hasdest:<http://has_dest> \
                         PREFIX onport:<http://on_port> \
@@ -115,7 +104,7 @@ def CP(iterNo):
             edge = 'http://vector-a-score'
             elem = '<' + nid + '> <' + edge + '> "' + score + '"'
             elem2 = '<' + nid + '> <' + edge + '>'
-            
+            print elem
             ins_array.append(elem)
             del_array.append(elem2)
 
@@ -139,7 +128,7 @@ def CP(iterNo):
             edge = 'http://vector-b-score'
             elem = '<' + nid + '> <' + edge + '> "' + score + '"'
             elem2 = '<' + nid + '> <' + edge + '>'
-            
+            print elem
             ins_array.append(elem)
             del_array.append(elem2)
 
@@ -165,7 +154,7 @@ def CP(iterNo):
             edge = 'http://vector-c-score'
             elem = '<' + nid + '> <' + edge + '> "' + score + '"'
             elem2 = '<' + nid + '> <' + edge + '>'
-            
+            print elem
             ins_array.append(elem)
             del_array.append(elem2)
 
@@ -174,7 +163,7 @@ def CP(iterNo):
     print("ins_array has size " + str(len(ins_array)))
     # inserts all calculations into graph ---------------------------------------------------
     for i in range ( len(ins_array)):
-        print ins_array[i]
+        print str(i) 
         updatestring = 'DELETE {' + del_array[i] + ' ?o } \
                         INSERT {' + ins_array[i] +'} \
                         WHERE {' + del_array[i] + ' ?o } '
@@ -222,6 +211,7 @@ def CP(iterNo):
     
     #print("ins_array has size " + str(len(ins_array)))----------------------------------
     print "final loop"
+    idx = 0
     for item in ins_array:
         #print (item)
         sourceip = item.split()[0]
@@ -230,11 +220,7 @@ def CP(iterNo):
         new_score = ""
 
         delitem = sourceip + " " + edgelabel # + " \"" + old_score + "\""
- 
-        #deletes all scores from the previous calculation so they can be updated------------
-        #deletestring ={'update': 'DELETE DATA {'+delitem+'}' }
-        #s.post('https://sherlock.psc.edu/dataset/sparql/LBNL/update',headers=headers,params=deletestring)
-
+  
         if (edgelabel == '<http://vector-a-score>'):
             new_score = str(float(old_score) / float(vectorSum_a))
 
@@ -245,17 +231,21 @@ def CP(iterNo):
             new_score = str(float(old_score) / float(vectorSum_c))
 
         newitem = sourceip + ' ' + edgelabel + ' "' + new_score + '"'
-        print newitem
+        print str(idx) +" "+ delitem
+        print str(idx) +" "+ newitem
 
-        if(new_score != ""):
-            updatestring = 'DELETE {' + delitem + ' ?o } \
-                        INSERT {' + newitem +'} \
-                        WHERE {' + delitem + ' ?o } '
-            #insertstring ={'update': 'INSERT DATA {'+newitem+'}'}
-            updated = {'update': updatestring}
-            s.post('https://sherlock.psc.edu/dataset/sparql/LBNL/update',headers=headers,params=updated)
+        #if(new_score != ""): 
+        updatestring = 'DELETE {' + delitem + ' ?o } \
+                    INSERT {' + newitem +'} \
+                    WHERE {' + delitem + ' ?o } '
+                    
+        updated = {'update': updatestring}
+        result = s.post('https://sherlock.psc.edu/dataset/sparql/LBNL/update',headers=headers,params=updated)
+        #print result.text
 
-            output_array.append(sourceip + ', ' + str(iterNo) + ', ' + new_score)
+        output_array.append(sourceip + ', ' + str(iterNo) + ', ' + new_score)
+
+        idx += 1
 
 
 def writeToFile():
