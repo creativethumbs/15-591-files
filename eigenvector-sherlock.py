@@ -74,10 +74,15 @@ def MVM(iterNo):
         
         ins_array.append(elem)
 
+    updatestring = ''
     for item in ins_array:
-        updatestring ={'update': 'INSERT DATA {'+item+'}'}
-        s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=updatestring)
-
+        updatestring += 'INSERT DATA {'+item+'}; ' 
+    
+    print str(len(updatestring))
+    updated ={'update': updatestring}
+    status = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=updated)
+    print status.text
+    
     query3 = {'query': sumofsquares}
     result = s.get('https://sherlock.psc.edu/dataset/sparql/eigenvector2/query',params=query3)
 
@@ -94,18 +99,20 @@ def MVM(iterNo):
     deletestring ={'update': deletescores}
     s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=deletestring)
 
-
+    insertstring = ''
     for item in ins_array:
         vectorname = item.split()[0]
         old_score = item.split()[2][1:-1] #need to remove the double quotes
         new_score = str(float(old_score) / float(vectorSum))
         newitem = vectorname + ' ' + item.split()[1] + ' "' + new_score + '"'
         
-        insertstring ={'update': 'INSERT DATA {'+newitem+'}'}
-
-        status2 = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=insertstring)
+        insertstring += 'INSERT DATA {'+newitem+'}; '
 
         output_array.append(vectorname + ', ' + str(iterNo) + ', ' + new_score)
+
+    updated = {'update': insertstring}
+    status2 = s.post('https://sherlock.psc.edu/dataset/sparql/eigenvector2/update',headers=headers,params=updated)
+    print status2.text
 
 
 def writeToFile():

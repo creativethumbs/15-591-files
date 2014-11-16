@@ -11,7 +11,7 @@ import xmltodict, json
 import string
 import urllib
 
-outputFile = open('LBNL-sherlock.txt', 'w')
+outputFile = open('LBNL-sherlock-big.txt', 'w')
 
 output_array = [] # array for writing to output text file
 
@@ -29,57 +29,57 @@ headers = {'content-type': 'application/x-www-form-urlencoded'}
 def CP(iterNo):  
     # check com2 pg.6
     sumofscores_a = 'PREFIX hasdest:<http://has_dest> \
-PREFIX onport:<http://on_port> \
-PREFIX bscore:<http://vector-b-score> \
-PREFIX cscore:<http://vector-c-score> \
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-SELECT ?srcip (SUM(xsd:double(?bscore) * xsd:double(?cscore)) AS ?totalScore) \
-{?vector_b bscore: ?bscore . \
-?vector_c cscore: ?cscore . \
-?srcip hasdest: ?dstip . \
-?srcip onport: ?portnum . \
-FILTER(?dstip = ?vector_b && ?portnum = ?vector_c) \
-} GROUP BY ?srcip'
+                        PREFIX onport:<http://on_port> \
+                        PREFIX bscore:<http://vector-b-score> \
+                        PREFIX cscore:<http://vector-c-score> \
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
+                        SELECT ?srcip (SUM(xsd:double(?bscore) * xsd:double(?cscore)) AS ?totalScore) \
+                        {?vector_b bscore: ?bscore . \
+                        ?vector_c cscore: ?cscore . \
+                        ?srcip hasdest: ?dstip . \
+                        ?srcip onport: ?portnum . \
+                        FILTER(?dstip = ?vector_b && ?portnum = ?vector_c) \
+                        } GROUP BY ?srcip'
 
     sumofscores_b = 'PREFIX hasdest:<http://has_dest> \
-PREFIX onport:<http://on_port> \
-PREFIX ascore:<http://vector-a-score> \
-PREFIX cscore:<http://vector-c-score> \
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-SELECT ?srcip (SUM(xsd:double(?ascore) * xsd:double(?cscore)) AS ?totalScore) \
-{?vector_a ascore: ?ascore . \
-?vector_c cscore: ?cscore . \
-?srcip hasdest: ?dstip . \
-?srcip onport: ?portnum . \
-FILTER(?dstip = ?vector_a && ?portnum = ?vector_c) \
-} GROUP BY ?srcip'
+                        PREFIX onport:<http://on_port> \
+                        PREFIX ascore:<http://vector-a-score> \
+                        PREFIX cscore:<http://vector-c-score> \
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
+                        SELECT ?srcip (SUM(xsd:double(?ascore) * xsd:double(?cscore)) AS ?totalScore) \
+                        {?vector_a ascore: ?ascore . \
+                        ?vector_c cscore: ?cscore . \
+                        ?srcip hasdest: ?dstip . \
+                        ?srcip onport: ?portnum . \
+                        FILTER(?dstip = ?vector_a && ?portnum = ?vector_c) \
+                        } GROUP BY ?srcip'
 
     sumofscores_c = 'PREFIX hasdest:<http://has_dest> \
-PREFIX onport:<http://on_port> \
-PREFIX ascore:<http://vector-a-score> \
-PREFIX bscore:<http://vector-b-score> \
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-SELECT ?srcip (SUM(xsd:double(?ascore) * xsd:double(?bscore)) AS ?totalScore) \
-{?vector_a ascore: ?ascore . \
-?vector_b bscore: ?bscore . \
-?srcip hasdest: ?dstip . \
-?srcip hasdest: ?dstip2 . \
-FILTER(?dstip = ?vector_a && ?dstip2 = ?vector_b) \
-} GROUP BY ?srcip'
+                        PREFIX onport:<http://on_port> \
+                        PREFIX ascore:<http://vector-a-score> \
+                        PREFIX bscore:<http://vector-b-score> \
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
+                        SELECT ?srcip (SUM(xsd:double(?ascore) * xsd:double(?bscore)) AS ?totalScore) \
+                        {?vector_a ascore: ?ascore . \
+                        ?vector_b bscore: ?bscore . \
+                        ?srcip hasdest: ?dstip . \
+                        ?srcip hasdest: ?dstip2 . \
+                        FILTER(?dstip = ?vector_a && ?dstip2 = ?vector_b) \
+                        } GROUP BY ?srcip'
 
     #uses scores from previous calculation
     sumofsquares_a = 'PREFIX score:<http://vector-a-score> \
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
-{?s score: ?score}'
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
+                        SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
+                        {?s score: ?score}'
     sumofsquares_b = 'PREFIX score:<http://vector-b-score> \
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
-{?s score: ?score}'
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
+                        SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
+                        {?s score: ?score}'
     sumofsquares_c = 'PREFIX score:<http://vector-c-score> \
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
-SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
-{?s score: ?score}'
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \
+                        SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
+                        {?s score: ?score}'
 
     del_array = [] # array for storing values to delete
     ins_array = [] # array for storing values to insert
@@ -87,7 +87,7 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
 
     # first equation ---------------------------------------------
     qsumofscores_a = {'query': sumofscores_a}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL/query',params=qsumofscores_a)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL-big/query',params=qsumofscores_a)
      
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -112,7 +112,7 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
 
     # second equation ----------------------------------------------------
     qsumofscores_b = {'query': sumofscores_b}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL/query',params=qsumofscores_b)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL-big/query',params=qsumofscores_b)
     
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -136,7 +136,7 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
 
     # third equation ----------------------------------------------------
     qsumofscores_c = {'query': sumofscores_c}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL/query',params=qsumofscores_c)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL-big/query',params=qsumofscores_c)
     
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -166,26 +166,21 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
     # inserts all calculations into graph ---------------------------------------------------
     for i in range ( len(ins_array)):
         print str(i) +" "+ ins_array[i]
-        bigupdatestring += 'DELETE {' + del_array[i] + ' ?o } INSERT {' + ins_array[i] +'} WHERE {' + del_array[i] + ' ?o }; '
-
-        if((i > 0 and i % 25 == 0) or i == len(ins_array)-1):
-            print str(len(bigupdatestring))
-            updated = {'update': bigupdatestring}
-            result = s.post('https://sherlock.psc.edu/dataset/sparql/LBNL/update',headers=headers,params=updated)
-            bigupdatestring = ''
-            print result.text
+        bigupdatestring += 'DELETE {' + del_array[i] + ' ?o } \
+                        INSERT {' + ins_array[i] +'} \
+                        WHERE {' + del_array[i] + ' ?o }; '
     
-    
+    #print bigupdatestring
     #sys.exit()
 
-    #updated = {'update': bigupdatestring}
-    #result = s.post('https://sherlock.psc.edu/dataset/sparql/LBNL/update',headers=headers,params=updated)
+    updated = {'update': bigupdatestring}
+    s.post('https://sherlock.psc.edu/dataset/sparql/LBNL-big/update',headers=headers,params=updated)
 
-    #print "first update done"
+    print "first update done"
 
     #gets the vectorSum for the first vector table -----------------------------------
     qsumofsquares_a = {'query': sumofsquares_a}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL/query',params=qsumofsquares_a)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL-big/query',params=qsumofsquares_a)
 
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -197,7 +192,7 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
 
     #gets the vectorSum for the second vector table -----------------------------------
     qsumofsquares_b = {'query': sumofsquares_b}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL/query',params=qsumofsquares_b)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL-big/query',params=qsumofsquares_b)
 
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -209,7 +204,7 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
 
     #gets the vectorSum for the third vector table -----------------------------------
     qsumofsquares_c = {'query': sumofsquares_c}
-    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL/query',params=qsumofsquares_c)
+    result = s.get('https://sherlock.psc.edu/dataset/sparql/LBNL-big/query',params=qsumofsquares_c)
 
     xml_source = result.text
     obj = xmltodict.parse(xml_source)
@@ -225,12 +220,12 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
     #print("ins_array has size " + str(len(ins_array)))----------------------------------
     print "final loop"
     bigupdatestring2 = ''
-    
-    for i in range ( len(ins_array)):
+    idx = 0
+    for item in ins_array:
         #print (item)
-        sourceip = ins_array[i].split()[0]
-        old_score = ins_array[i].split()[2][1:-1] #need to remove the double quotes
-        edgelabel = ins_array[i].split()[1]
+        sourceip = item.split()[0]
+        old_score = item.split()[2][1:-1] #need to remove the double quotes
+        edgelabel = item.split()[1]
         new_score = ""
 
         delitem = sourceip + " " + edgelabel # + " \"" + old_score + "\""
@@ -245,26 +240,24 @@ SELECT (SUM(xsd:double(?score) * xsd:double(?score)) as ?vectorSum) \
             new_score = str(float(old_score) / float(vectorSum_c))
 
         newitem = sourceip + ' ' + edgelabel + ' "' + new_score + '"'
-        print str(i) +" "+ newitem
-        bigupdatestring2 += 'DELETE {' + delitem + ' ?o } INSERT {' + newitem +'} WHERE {' + delitem + ' ?o }; '
-            
-        if((i > 0 and i % 25 == 0) or i == len(ins_array)-1):
+        print str(idx) +" "+ newitem
+
         #if(new_score != ""): 
-            print str(len(bigupdatestring2))
-            updated2 = {'update': bigupdatestring2}
-            result = s.post('https://sherlock.psc.edu/dataset/sparql/LBNL/update',headers=headers,params=updated2)
-            bigupdatestring2 = ''
-            print result.text     
+        bigupdatestring2 += 'DELETE {' + delitem + ' ?o } \
+                    INSERT {' + newitem +'} \
+                    WHERE {' + delitem + ' ?o }; '
+                    
         #print result.text
 
-        output_array.append(str(iterNo) + ' ' + sourceip + ', ' + edgelabel + ', ' + new_score)
- 
+        output_array.append(sourceip + ', ' + str(iterNo) + ', ' + new_score)
+
+        idx += 1
     #print bigupdatestring2
     #sys.exit()
-    #updated2 = {'update': bigupdatestring2}
-    #result = s.post('https://sherlock.psc.edu/dataset/sparql/LBNL/update',headers=headers,params=updated2)
-    #print result.text
-    #print "second update done"  
+    updated = {'update': bigupdatestring2}
+    result = s.post('https://sherlock.psc.edu/dataset/sparql/LBNL-big/update',headers=headers,params=updated)
+    
+    print "second update done"  
 
 def writeToFile():
     for item in output_array:
